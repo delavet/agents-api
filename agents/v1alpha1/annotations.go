@@ -34,6 +34,12 @@ const (
 	// no Sandbox or Checkpoint still references it before performing the actual
 	// deletion.
 	AnnotationCleanupCandidate = InternalPrefix + "cleanup-candidate"
+
+	// AnnotationSecurityRules carries the normalized inline egress security
+	// rules (a JSON array of SecurityRule) for one Sandbox. Only the Sandbox
+	// Manager writes it; the Egress Policy Enforcer evaluates the rules under
+	// the calling workload's verified identity.
+	AnnotationSecurityRules = InternalPrefix + "security-rules"
 )
 
 // E2B annotations
@@ -46,6 +52,11 @@ const (
 	AnnotationEnvdURL         = E2BPrefix + "envd-url"
 	// AnnotationCSIVolumeConfig is the annotation key for CSI mount configuration.
 	AnnotationCSIVolumeConfig = E2BPrefix + "csi-volume-config"
+	// MetadataKeySecurityRules is the reserved E2B metadata key whose value is
+	// a JSON array of inline security rules. It is consumed by the Sandbox
+	// Manager and normalized into AnnotationSecurityRules; tenants can never
+	// write AnnotationSecurityRules directly.
+	MetadataKeySecurityRules = E2BPrefix + "security-rules"
 )
 
 // LabelSandboxUpdateOps marks which SandboxUpdateOps is operating on this sandbox.
