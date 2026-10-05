@@ -797,6 +797,132 @@ spec:
                               - Block
                               - Ignore
                               type: string
+                            oauth2:
+                              description: |-
+                                OAuth2 declares the endpoint operation, credential service actions, and
+                                optional client response extensions for OAuth2 and OAuth2Device.
+                              properties:
+                                action:
+                                  description: Action is required for non-Token operations.
+                                  type: string
+                                allowAuthorizedSession:
+                                  description: |-
+                                    AllowAuthorizedSession permits a broker-confirmed already-authorized
+                                    device session with no verification URI. It is not an RFC 8628 response
+                                    and must be explicitly selected for clients that support this extension.
+                                  type: boolean
+                                grants:
+                                  description: Grants selects the supported token
+                                    grants and their service actions.
+                                  items:
+                                    description: OAuth2Grant maps a grant to an authorized
+                                      credential service action.
+                                    properties:
+                                      action:
+                                        description: Action is the credential service's
+                                          X-Api-Action-Name.
+                                        minLength: 1
+                                        type: string
+                                      grantType:
+                                        description: GrantType is the exact OAuth
+                                          grant_type, including extension grant URIs.
+                                        minLength: 1
+                                        type: string
+                                      requestParameters:
+                                        additionalProperties:
+                                          type: string
+                                        description: |-
+                                          RequestParameters maps public OAuth request parameter names to credential
+                                          service JSON fields. Client IDs/secrets and refresh tokens cannot be mapped.
+                                          Trusted credentialProviderName and resourceId cannot be overridden.
+                                        type: object
+                                      requiredParameters:
+                                        description: |-
+                                          RequiredParameters declares required inputs for an extension grant.
+                                          Core grants also validate their standard required parameters.
+                                        items:
+                                          type: string
+                                        type: array
+                                      response:
+                                        description: Response overrides the endpoint's
+                                          public response extensions for this grant.
+                                        properties:
+                                          authorizationRequired:
+                                            description: |-
+                                              AuthorizationRequired adds fields when the credential service confirms
+                                              a non-retryable need for new authorization.
+                                            type: object
+                                            x-kubernetes-preserve-unknown-fields: true
+                                          error:
+                                            description: Error adds fields to an OAuth
+                                              error response.
+                                            type: object
+                                            x-kubernetes-preserve-unknown-fields: true
+                                          success:
+                                            description: Success adds fields to a
+                                              successful token response.
+                                            type: object
+                                            x-kubernetes-preserve-unknown-fields: true
+                                        type: object
+                                    required:
+                                    - action
+                                    - grantType
+                                    type: object
+                                  type: array
+                                  x-kubernetes-list-map-keys:
+                                  - grantType
+                                  x-kubernetes-list-type: map
+                                operation:
+                                  description: |-
+                                    Operation selects the endpoint role. Resource injects a Bearer credential.
+                                    Authorization delegates authorization-code/PKCE session setup and callback
+                                    binding to the trusted credential service and returns its authorization URL.
+                                  enum:
+                                  - Authorization
+                                  - DeviceAuthorization
+                                  - Token
+                                  - Resource
+                                  type: string
+                                requestFormat:
+                                  description: |-
+                                    RequestFormat defaults to Form. JSON is an explicit client compatibility
+                                    option. Authorization also accepts a standard GET query.
+                                  enum:
+                                  - Form
+                                  - JSON
+                                  type: string
+                                requestParameters:
+                                  additionalProperties:
+                                    type: string
+                                  description: |-
+                                    RequestParameters maps public endpoint request parameters to credential
+                                    service fields. The same restrictions as OAuth2Grant apply.
+                                  type: object
+                                response:
+                                  description: |-
+                                    Response adds public response fields. Token grants inherit it unless they
+                                    declare their own Response.
+                                  properties:
+                                    authorizationRequired:
+                                      description: |-
+                                        AuthorizationRequired adds fields when the credential service confirms
+                                        a non-retryable need for new authorization.
+                                      type: object
+                                      x-kubernetes-preserve-unknown-fields: true
+                                    error:
+                                      description: Error adds fields to an OAuth error
+                                        response.
+                                      type: object
+                                      x-kubernetes-preserve-unknown-fields: true
+                                    success:
+                                      description: Success adds fields to a successful
+                                        token response.
+                                      type: object
+                                      x-kubernetes-preserve-unknown-fields: true
+                                  type: object
+                              required:
+                              - operation
+                              type: object
                             type:
                               default: ApiKey
                               description: Type discriminates the transformation strategy.
@@ -804,6 +930,8 @@ spec:
                               enum:
                               - ApiKey
                               - AliyunSTS
+                              - OAuth2Device
+                              - OAuth2
                               type: string
                           required:
                           - credentialRef

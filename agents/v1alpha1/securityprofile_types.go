@@ -191,7 +191,7 @@ type ActionCondition struct {
 }
 
 // TokenTransformationType identifies a credential transformation strategy.
-// +kubebuilder:validation:Enum=ApiKey;AliyunSTS
+// +kubebuilder:validation:Enum=ApiKey;AliyunSTS;OAuth2Device;OAuth2
 type TokenTransformationType string
 
 const (
@@ -201,6 +201,12 @@ const (
 	// TokenTransformationTypeAliyunSTS replaces the credentials in an Aliyun
 	// SDK request and recomputes its signature.
 	TokenTransformationTypeAliyunSTS TokenTransformationType = "AliyunSTS"
+	// TokenTransformationTypeOAuth2Device is the previous device adapter name.
+	// It requires the same explicit OAuth2 configuration as OAuth2.
+	TokenTransformationTypeOAuth2Device TokenTransformationType = "OAuth2Device"
+	// TokenTransformationTypeOAuth2 brokers OAuth operations through a
+	// credential provider without exposing its real credentials to the workload.
+	TokenTransformationTypeOAuth2 TokenTransformationType = "OAuth2"
 )
 
 // CredentialRefKind identifies a deprecated credential source type.
@@ -415,6 +421,11 @@ type TokenTransformationAction struct {
 	Type TokenTransformationType `json:"type,omitempty"`
 	// CredentialRef identifies the credential source.
 	CredentialRef CredentialRef `json:"credentialRef"`
+
+	// OAuth2 declares the endpoint operation, credential service actions, and
+	// optional client response extensions for OAuth2 and OAuth2Device.
+	// +optional
+	OAuth2 *OAuth2Config `json:"oauth2,omitempty"`
 
 	// ApiKey configures an ApiKey transformation. It is required for ApiKey and
 	// ignored for AliyunSTS. When targetHeaders is set, targetHeaders and value
