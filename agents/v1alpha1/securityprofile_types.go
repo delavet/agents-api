@@ -422,7 +422,7 @@ type TokenTransformationAction struct {
 	// CredentialRef identifies the credential source.
 	CredentialRef CredentialRef `json:"credentialRef"`
 
-	// OAuth2 declares the endpoint operation, credential service actions, and
+	// OAuth2 declares the endpoint operation, optional grant restrictions, and
 	// optional client response extensions for OAuth2 and OAuth2Device.
 	// +optional
 	OAuth2 *OAuth2Config `json:"oauth2,omitempty"`

@@ -36,59 +36,35 @@ type OAuth2Response struct {
 	AuthorizationRequired *runtime.RawExtension `json:"authorizationRequired,omitempty"`
 }
 
-// OAuth2Grant maps a grant to an authorized credential service action.
-type OAuth2Grant struct {
-	// GrantType is the exact OAuth grant_type, including extension grant URIs.
-	// +kubebuilder:validation:MinLength=1
-	GrantType string `json:"grantType"`
-	// Action is the credential service's X-Api-Action-Name.
-	// +kubebuilder:validation:MinLength=1
-	Action string `json:"action"`
-	// RequestParameters maps public OAuth request parameter names to credential
-	// service JSON fields. Client IDs/secrets and refresh tokens cannot be mapped.
-	// Trusted credentialProviderName and resourceId cannot be overridden.
-	// +optional
-	RequestParameters map[string]string `json:"requestParameters,omitempty"`
-	// RequiredParameters declares required inputs for an extension grant.
-	// Core grants also validate their standard required parameters.
-	// +optional
-	RequiredParameters []string `json:"requiredParameters,omitempty"`
-	// Response overrides the endpoint's public response extensions for this grant.
-	// +optional
-	Response *OAuth2Response `json:"response,omitempty"`
-}
-
 // OAuth2Config describes an OAuth endpoint independently of its URL or vendor.
+// +kubebuilder:validation:XValidation:rule="self.operation == 'Token' || !has(self.allowedGrantTypes) || size(self.allowedGrantTypes) == 0",message="allowedGrantTypes requires the Token operation"
 type OAuth2Config struct {
 	// Operation selects the endpoint role. Resource injects a Bearer credential.
-	// Authorization delegates authorization-code/PKCE session setup and callback
-	// binding to the trusted credential service and returns its authorization URL.
-	// +kubebuilder:validation:Enum=Authorization;DeviceAuthorization;Token;Resource
+	// +kubebuilder:validation:Enum=DeviceAuthorization;Token;Resource
 	Operation string `json:"operation"`
-	// Action is required for non-Token operations.
-	// +optional
-	Action string `json:"action,omitempty"`
 	// RequestFormat defaults to Form. JSON is an explicit client compatibility
-	// option. Authorization also accepts a standard GET query.
+	// option.
 	// +optional
 	// +kubebuilder:validation:Enum=Form;JSON
+	// +kubebuilder:default=Form
 	RequestFormat string `json:"requestFormat,omitempty"`
-	// RequestParameters maps public endpoint request parameters to credential
-	// service fields. The same restrictions as OAuth2Grant apply.
+	// AllowedGrantTypes optionally restricts Token requests to these exact
+	// grant_type values, including extension grant URIs. Omitted or empty means
+	// no additional policy restriction; protocol support and service authorization
+	// still apply. Non-empty lists are only valid for the Token operation.
 	// +optional
-	RequestParameters map[string]string `json:"requestParameters,omitempty"`
-	// Grants selects the supported token grants and their service actions.
-	// +optional
-	// +listType=map
-	// +listMapKey=grantType
-	Grants []OAuth2Grant `json:"grants,omitempty"`
+	// +listType=set
+	// +kubebuilder:validation:items:MinLength=1
+	AllowedGrantTypes []string `json:"allowedGrantTypes,omitempty"`
 	// AllowAuthorizedSession permits a broker-confirmed already-authorized
-	// device session with no verification URI. It is not an RFC 8628 response
-	// and must be explicitly selected for clients that support this extension.
+	// device session with no verification URI. Defaults to true and only affects
+	// DeviceAuthorization. Set false for clients requiring an RFC 8628 response.
 	// +optional
-	AllowAuthorizedSession bool `json:"allowAuthorizedSession,omitempty"`
-	// Response adds public response fields. Token grants inherit it unless they
-	// declare their own Response.
+	// +kubebuilder:default=true
+	AllowAuthorizedSession *bool `json:"allowAuthorizedSession,omitempty"`
+	// CustomResponse adds public JSON fields to generated token success and
+	// OAuth error responses. It cannot replace standard fields or alter an
+	// upstream Resource response. Omitted means no additional fields.
 	// +optional
-	Response *OAuth2Response `json:"response,omitempty"`
+	CustomResponse *OAuth2Response `json:"customResponse,omitempty"`
 }
