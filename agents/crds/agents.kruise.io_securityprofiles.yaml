@@ -795,6 +795,76 @@ spec:
                               - Block
                               - Ignore
                               type: string
+                            oauth2:
+                              description: |-
+                                OAuth2 declares the endpoint operation, optional grant restrictions, and
+                                optional client response extensions for OAuth2 and OAuth2Device.
+                              properties:
+                                allowAuthorizedSession:
+                                  default: true
+                                  description: |-
+                                    AllowAuthorizedSession permits a broker-confirmed already-authorized
+                                    device session with no verification URI. Defaults to true and only affects
+                                    DeviceAuthorization. Set false for clients requiring an RFC 8628 response.
+                                  type: boolean
+                                allowedGrantTypes:
+                                  description: |-
+                                    AllowedGrantTypes optionally restricts Token requests to these exact
+                                    grant_type values, including extension grant URIs. Omitted or empty means
+                                    no additional policy restriction; protocol support and service authorization
+                                    still apply. Non-empty lists are only valid for the Token operation.
+                                  items:
+                                    minLength: 1
+                                    type: string
+                                  type: array
+                                  x-kubernetes-list-type: set
+                                customResponse:
+                                  description: |-
+                                    CustomResponse adds public JSON fields to generated token success and
+                                    OAuth error responses. It cannot replace standard fields or alter an
+                                    upstream Resource response. Omitted means no additional fields.
+                                  properties:
+                                    authorizationRequired:
+                                      description: |-
+                                        AuthorizationRequired adds fields when the credential service confirms
+                                        a non-retryable need for new authorization.
+                                      type: object
+                                      x-kubernetes-preserve-unknown-fields: true
+                                    error:
+                                      description: Error adds fields to an OAuth error
+                                        response.
+                                      type: object
+                                      x-kubernetes-preserve-unknown-fields: true
+                                    success:
+                                      description: Success adds fields to a successful
+                                        token response.
+                                      type: object
+                                      x-kubernetes-preserve-unknown-fields: true
+                                  type: object
+                                operation:
+                                  description: Operation selects the endpoint role.
+                                    Resource injects a Bearer credential.
+                                  enum:
+                                  - DeviceAuthorization
+                                  - Token
+                                  - Resource
+                                  type: string
+                                requestFormat:
+                                  default: Form
+                                  description: |-
+                                    RequestFormat defaults to Form. JSON is an explicit client compatibility
+                                    option.
+                                  enum:
+                                  - Form
+                                  - JSON
+                                  type: string
+                              required:
+                              - operation
+                              type: object
+                              x-kubernetes-validations:
+                              - message: allowedGrantTypes requires the Token operation
+                                rule: self.operation == 'Token' || !has(self.allowedGrantTypes)
+                                  || size(self.allowedGrantTypes) == 0
                             type:
                               default: ApiKey
                               description: Type discriminates the transformation strategy.
@@ -802,6 +872,8 @@ spec:
                               enum:
                               - ApiKey
                               - AliyunSTS
+                              - OAuth2Device
+                              - OAuth2
                               type: string
                           required:
                           - credentialRef
