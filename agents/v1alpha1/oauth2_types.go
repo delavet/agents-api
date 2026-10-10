@@ -48,7 +48,7 @@ type OAuth2Config struct {
 }
 
 // OAuth2Operation selects exactly one endpoint role. Empty role objects are valid.
-// +kubebuilder:validation:XValidation:rule="[has(self.deviceAuthorization), has(self.token), has(self.resource)].filter(selected, selected).size() == 1",message="exactly one OAuth2 operation is required"
+// +kubebuilder:validation:XValidation:rule="(has(self.deviceAuthorization) ? 1 : 0) + (has(self.token) ? 1 : 0) + (has(self.resource) ? 1 : 0) == 1",message="exactly one OAuth2 operation is required"
 type OAuth2Operation struct {
 	// DeviceAuthorization creates a device authorization session.
 	// +optional
