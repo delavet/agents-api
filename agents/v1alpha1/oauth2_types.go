@@ -18,13 +18,9 @@ package v1alpha1
 
 import "k8s.io/apimachinery/pkg/runtime"
 
-// OAuth2Response configures additional public JSON fields. Standard OAuth
-// fields cannot be overridden, and real provider credentials are never in scope.
-type OAuth2Response struct {
-	// Success adds fields to a successful token response.
-	// +optional
-	// +kubebuilder:pruning:PreserveUnknownFields
-	Success *runtime.RawExtension `json:"success,omitempty"`
+// OAuth2ErrorResponse adds public JSON fields to generated OAuth errors.
+// Standard fields cannot be overridden; provider credentials are never in scope.
+type OAuth2ErrorResponse struct {
 	// Error adds fields to an OAuth error response.
 	// +optional
 	// +kubebuilder:pruning:PreserveUnknownFields
@@ -36,35 +32,68 @@ type OAuth2Response struct {
 	AuthorizationRequired *runtime.RawExtension `json:"authorizationRequired,omitempty"`
 }
 
-// OAuth2Config describes an OAuth endpoint independently of its URL or vendor.
-// +kubebuilder:validation:XValidation:rule="self.operation == 'Token' || !has(self.allowedGrantTypes) || size(self.allowedGrantTypes) == 0",message="allowedGrantTypes requires the Token operation"
-type OAuth2Config struct {
-	// Operation selects the endpoint role. Resource injects a Bearer credential.
-	// +kubebuilder:validation:Enum=DeviceAuthorization;Token;Resource
-	Operation string `json:"operation"`
-	// RequestFormat defaults to Form. JSON is an explicit client compatibility
-	// option.
+// OAuth2Response adds public JSON fields to generated token responses.
+type OAuth2Response struct {
+	OAuth2ErrorResponse `json:",inline"`
+	// Success adds fields to a successful token response.
 	// +optional
-	// +kubebuilder:validation:Enum=Form;JSON
-	// +kubebuilder:default=Form
-	RequestFormat string `json:"requestFormat,omitempty"`
-	// AllowedGrantTypes optionally restricts Token requests to these exact
-	// grant_type values, including extension grant URIs. Omitted or empty means
-	// no additional policy restriction; protocol support and service authorization
-	// still apply. Non-empty lists are only valid for the Token operation.
+	// +kubebuilder:pruning:PreserveUnknownFields
+	Success *runtime.RawExtension `json:"success,omitempty"`
+}
+
+// OAuth2Config selects an OAuth endpoint independently of its URL or vendor.
+type OAuth2Config struct {
+	// Operation contains exactly one endpoint role and its options.
+	Operation OAuth2Operation `json:"operation"`
+}
+
+// OAuth2Operation selects exactly one endpoint role. Empty role objects are valid.
+// +kubebuilder:validation:XValidation:rule="[has(self.deviceAuthorization), has(self.token), has(self.resource)].filter(selected, selected).size() == 1",message="exactly one OAuth2 operation is required"
+type OAuth2Operation struct {
+	// DeviceAuthorization creates a device authorization session.
+	// +optional
+	DeviceAuthorization *OAuth2DeviceAuthorizationConfig `json:"deviceAuthorization,omitempty"`
+	// Token processes token grants and returns placeholder credentials.
+	// +optional
+	Token *OAuth2TokenConfig `json:"token,omitempty"`
+	// Resource injects a service-issued Bearer credential into the request.
+	// +optional
+	Resource *OAuth2ResourceConfig `json:"resource,omitempty"`
+}
+
+// OAuth2DeviceAuthorizationConfig configures the device authorization endpoint.
+type OAuth2DeviceAuthorizationConfig struct {
+	// AllowAuthorizedSession permits a broker-confirmed already-authorized
+	// device session with no verification URI. Defaults to true. Set false for
+	// clients requiring an RFC 8628 response; it does not force a new session.
+	// +optional
+	// +kubebuilder:default=true
+	AllowAuthorizedSession *bool `json:"allowAuthorizedSession,omitempty"`
+	// CustomResponse adds public fields to generated OAuth errors.
+	// +optional
+	CustomResponse *OAuth2ErrorResponse `json:"customResponse,omitempty"`
+}
+
+// OAuth2TokenConfig configures the token endpoint. Form and JSON requests are
+// decoded according to Content-Type; their response extensions are policy-selected.
+type OAuth2TokenConfig struct {
+	// AllowedGrantTypes optionally restricts requests to exact grant_type values,
+	// including extension grant URIs. Omitted or empty adds no policy restriction;
+	// protocol support and service authorization still apply.
 	// +optional
 	// +listType=set
 	// +kubebuilder:validation:items:MinLength=1
 	AllowedGrantTypes []string `json:"allowedGrantTypes,omitempty"`
-	// AllowAuthorizedSession permits a broker-confirmed already-authorized
-	// device session with no verification URI. Defaults to true and only affects
-	// DeviceAuthorization. Set false for clients requiring an RFC 8628 response.
-	// +optional
-	// +kubebuilder:default=true
-	AllowAuthorizedSession *bool `json:"allowAuthorizedSession,omitempty"`
-	// CustomResponse adds public JSON fields to generated token success and
-	// OAuth error responses. It cannot replace standard fields or alter an
-	// upstream Resource response. Omitted means no additional fields.
+	// CustomResponse adds public fields to generated token success and errors.
+	// It cannot replace standard OAuth fields.
 	// +optional
 	CustomResponse *OAuth2Response `json:"customResponse,omitempty"`
+}
+
+// OAuth2ResourceConfig configures Bearer injection for resource requests.
+type OAuth2ResourceConfig struct {
+	// CustomResponse adds public fields to generated OAuth errors. Upstream
+	// resource responses are not modified.
+	// +optional
+	CustomResponse *OAuth2ErrorResponse `json:"customResponse,omitempty"`
 }
